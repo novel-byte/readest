@@ -9,6 +9,7 @@ import { BsPencilSquare } from 'react-icons/bs';
 import { BsTranslate } from 'react-icons/bs';
 import { FaHeadphones } from 'react-icons/fa6';
 import { IoIosBuild } from 'react-icons/io';
+import { PiQuotesFill as QuoteCardIcon } from 'react-icons/pi';
 import { AnnotationToolType } from '@/types/annotator';
 import { stubTranslation as _ } from '@/utils/misc';
 
@@ -103,6 +104,12 @@ export const annotationToolButtons = createAnnotationToolButtons([
     tooltip: _('Share text after selection'),
     Icon: FiShare,
     quickAction: true,
+  },
+  {
+    type: 'quote',
+    label: _('Quote Card'),
+    tooltip: _('Create an aesthetic quote card after selection'),
+    Icon: QuoteCardIcon,
   },
 ]);
 
