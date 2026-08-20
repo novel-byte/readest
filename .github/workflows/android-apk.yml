@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-android:
@@ -76,3 +76,16 @@ jobs:
           path: |
             apps/readest-app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
+
+      - name: publish GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s globstar nullglob
+          apks=(apps/readest-app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk)
+          gh release create "android-debug-${GITHUB_RUN_NUMBER}" "${apks[@]}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "Readest Android debug build ${GITHUB_RUN_NUMBER}" \
+            --notes "Automated debug APK build from commit ${GITHUB_SHA}." \
+            --prerelease
