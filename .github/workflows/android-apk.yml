@@ -1,0 +1,78 @@
+name: Android APK (debug)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - name: setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+
+      - name: setup node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        with:
+          node-version: 24
+
+      - name: setup Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: setup Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+
+      - name: install NDK
+        run: sdkmanager "ndk;28.2.13676358"
+
+      - name: install Rust android targets
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: copy vendor dists to public directory
+        run: pnpm --filter @readest/readest-app setup-vendors
+
+      # The Next build crash-guards supabase.ts behind a short-circuit on
+      # NEXT_PUBLIC_SUPABASE_URL; without it the build trips `atob(undefined)`.
+      # Dummy values keep the (empty-schema) build happy without any secrets.
+      - name: create .env.local for Next.js
+        run: |
+          echo "NEXT_PUBLIC_APP_PLATFORM=tauri" >> apps/readest-app/.env.local
+          echo "NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co" >> apps/readest-app/.env.local
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key" >> apps/readest-app/.env.local
+
+      - name: build Android debug apk
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/28.2.13676358
+        run: |
+          cd apps/readest-app
+          rm -rf src-tauri/gen/android
+          pnpm tauri android init
+          pnpm tauri icon ../../data/icons/readest-book.png
+          git checkout src-tauri/gen/android
+          pnpm tauri android build --debug
+
+      - name: upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: readest-android-debug-apk
+          path: |
+            apps/readest-app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
