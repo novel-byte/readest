@@ -89,6 +89,7 @@ import ProofreadPopup from './ProofreadPopup';
 import { setProofreadRulesVisibility } from '@/app/reader/components/ProofreadRules';
 import ExportMarkdownDialog from './ExportMarkdownDialog';
 import ImportAnnotationsDialog from './ImportAnnotationsDialog';
+import QuoteCardModal from './QuoteCardModal';
 import Alert from '@/components/Alert';
 import ModalPortal from '@/components/ModalPortal';
 import { SelectedFile, useFileSelector } from '@/hooks/useFileSelector';
@@ -171,6 +172,8 @@ const Annotator: React.FC<{ bookKey: string; contentInsets: Insets }> = ({
   const [editingAnnotation, setEditingAnnotation] = useState<BookNote | null>(null);
   const [externalDragPoint, setExternalDragPoint] = useState<Point | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showQuoteDialog, setShowQuoteDialog] = useState(false);
+  const [quoteChapter, setQuoteChapter] = useState<string | undefined>(undefined);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [importingAnnotations, setImportingAnnotations] = useState(false);
   // "Clear Annotations" confirm dialog. Hosted here (and not in BookMenu)
@@ -1298,6 +1301,15 @@ const Annotator: React.FC<{ bookKey: string; contentInsets: Insets }> = ({
     handleDismissPopupAndSelection();
   };
 
+  const handleQuote = () => {
+    if (!selection?.text) return;
+    const bookDoc = bookData.bookDoc;
+    const tocItem =
+      selection.cfi && bookDoc?.toc ? findTocItemBS(bookDoc.toc, selection.cfi) : null;
+    setQuoteChapter(tocItem?.label ?? undefined);
+    setShowQuoteDialog(true);
+  };
+
   const handleHighlight = (update = false, highlightStyle?: HighlightStyle): BookNote | null => {
     if (!selection || !selection.text) return null;
     setHighlightOptionsVisible(true);
@@ -2041,6 +2053,8 @@ const Annotator: React.FC<{ bookKey: string; contentInsets: Insets }> = ({
         };
       case 'share':
         return { tooltipText: _(label), Icon, onClick: handleShare };
+      case 'quote':
+        return { tooltipText: _(label), Icon, onClick: handleQuote };
       default:
         return null;
     }
@@ -2211,6 +2225,15 @@ const Annotator: React.FC<{ bookKey: string; contentInsets: Insets }> = ({
           onClose={() => setShowImportDialog(false)}
           onImportMoonReader={importFromMoonReader}
           onImportReadest={importFromReadest}
+        />
+      )}
+      {showQuoteDialog && selection?.text && bookData.book && (
+        <QuoteCardModal
+          quoteText={selection.text}
+          bookTitle={bookData.book.title}
+          author={bookData.book.author || ''}
+          chapter={quoteChapter}
+          onClose={() => setShowQuoteDialog(false)}
         />
       )}
       {clearAnnotationsCount > 0 && (

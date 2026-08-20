@@ -16,7 +16,7 @@ describe('annotationToolbar helpers', () => {
     expect(ALL_ANNOTATION_TOOL_TYPES).toEqual(annotationToolButtons.map((b) => b.type));
   });
 
-  test('default toolbar is the eight non-share tools in canonical order', () => {
+  test('default toolbar is the non-share tools in canonical order (quote on by default)', () => {
     expect(DEFAULT_ANNOTATION_TOOLBAR_ITEMS).toEqual([
       'copy',
       'highlight',
@@ -26,6 +26,7 @@ describe('annotationToolbar helpers', () => {
       'translate',
       'tts',
       'proofread',
+      'quote',
     ]);
     expect(DEFAULT_ANNOTATION_TOOLBAR_ITEMS).not.toContain('share');
   });
@@ -65,6 +66,7 @@ describe('annotationToolbar helpers', () => {
       'tts',
       'proofread',
       'share',
+      'quote',
     ]);
   });
 
