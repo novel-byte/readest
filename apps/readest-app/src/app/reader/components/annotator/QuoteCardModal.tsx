@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { FiCopy, FiDownload, FiShare } from 'react-icons/fi';
 import { cn } from '@/utils/tailwind';
@@ -78,7 +78,10 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
   const [fontSize, setFontSize] = useState<FontSize>('M');
 
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const cardContentRef = useRef<HTMLDivElement | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [fitScale, setFitScale] = useState(1);
+  const [quoteDoesNotFit, setQuoteDoesNotFit] = useState(false);
 
   const theme = QUOTE_THEMES[themeId];
   const ratio = ASPECT_RATIOS[ratioId];
@@ -266,7 +269,33 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
     landscape: 0.85,
   };
   const fontSizeScale: Record<FontSize, number> = { S: 0.85, M: 1, L: 1.2 };
-  const fontScale = ratioFontScale[ratioId] * fontSizeScale[fontSize];
+  const preferredScale = ratioFontScale[ratioId] * fontSizeScale[fontSize];
+  const fontScale = preferredScale * fitScale;
+
+  useLayoutEffect(() => {
+    setFitScale(1);
+    setQuoteDoesNotFit(false);
+  }, [fontSize, quoteText, ratioId, bookTitle, author]);
+
+  useLayoutEffect(() => {
+    const content = cardContentRef.current;
+    if (!content) return;
+
+    // Fit the quote to the card after the browser has applied the current font size.
+    // The preview and export then use the same readable, content-aware scale.
+    const overflow = content.scrollHeight - content.clientHeight;
+    const minimumScale = 0.58;
+    if (overflow > 1 && fitScale > minimumScale) {
+      const nextScale = Math.max(
+        minimumScale,
+        fitScale * (content.clientHeight / content.scrollHeight) * 0.96,
+      );
+      setFitScale(nextScale);
+      return;
+    }
+
+    setQuoteDoesNotFit(overflow > 1);
+  }, [fitScale, fontSize, quoteText, ratioId, bookTitle, author]);
 
   return (
     <Dialog isOpen title={_('Quote Card')} onClose={onClose}>
@@ -306,6 +335,7 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
             &ldquo;
           </span>
           <div
+            ref={cardContentRef}
             style={{
               padding: `${48 * fontScale}px ${40 * fontScale}px`,
               display: 'flex',
@@ -374,7 +404,7 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
           </span>
         </div>
 
-        <div className='eink-bordered flex flex-col gap-1 rounded-lg border border-base-200 bg-base-100 p-3'>
+        <div className='flex flex-col gap-1'>
           <span className='mb-1 text-sm font-semibold'>{_('Customize')}</span>
           <fieldset className='flex flex-wrap items-center justify-between gap-2 py-1'>
             <legend className='text-sm text-base-content/70'>{_('Theme')}</legend>
@@ -396,11 +426,17 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
           </fieldset>
         </div>
 
+        {quoteDoesNotFit && (
+          <p className='text-sm leading-relaxed text-warning'>
+            {_('This passage is too long for this format. Select a shorter passage to share it.')}
+          </p>
+        )}
+
         <div className='mt-1 flex flex-col gap-2'>
           <button
             type='button'
             onClick={handleShare}
-            disabled={exporting}
+            disabled={exporting || quoteDoesNotFit}
             className='btn btn-contrast w-full gap-2'
           >
             <FiShare aria-hidden='true' />
@@ -410,7 +446,7 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
             <button
               type='button'
               onClick={() => void handleCopyImage()}
-              disabled={exporting}
+              disabled={exporting || quoteDoesNotFit}
               className='btn btn-ghost eink-bordered gap-2'
             >
               <FiCopy aria-hidden='true' />
@@ -419,7 +455,7 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
             <button
               type='button'
               onClick={() => void handleDownload()}
-              disabled={exporting}
+              disabled={exporting || quoteDoesNotFit}
               className='btn btn-ghost eink-bordered gap-2'
             >
               <FiDownload aria-hidden='true' />
