@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
+import { FiCopy, FiDownload, FiShare } from 'react-icons/fi';
 import { cn } from '@/utils/tailwind';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useEnv } from '@/context/EnvContext';
@@ -60,7 +61,6 @@ interface QuoteCardModalProps {
   quoteText: string;
   bookTitle: string;
   author: string;
-  chapter?: string;
   onClose: () => void;
 }
 
@@ -68,7 +68,6 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
   quoteText,
   bookTitle,
   author,
-  chapter,
   onClose,
 }) => {
   const _ = useTranslation();
@@ -208,6 +207,9 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
     }
   };
 
+  const focusRing =
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-content/20';
+
   const themeDots = Object.values(QUOTE_THEMES).map((t) => (
     <button
       key={t.id}
@@ -216,15 +218,13 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
       aria-pressed={t.id === themeId}
       onClick={() => setThemeId(t.id)}
       className={cn(
-        'flex h-7 w-7 items-center justify-center rounded-full transition',
+        'eink-bordered flex h-10 w-10 items-center justify-center rounded-full border transition-colors',
+        focusRing,
         t.id === themeId && 'ring-2 ring-offset-1 ring-offset-base-100 not-eink:ring-primary',
       )}
       style={{ backgroundColor: t.background }}
     >
-      <span
-        className={cn('h-3 w-3 rounded-full', t.id !== themeId && 'opacity-40')}
-        style={{ backgroundColor: t.text }}
-      />
+      <span className='h-3 w-3 rounded-full' style={{ backgroundColor: t.text }} />
     </button>
   ));
 
@@ -233,11 +233,11 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
       key={id}
       type='button'
       onClick={() => setRatioId(id)}
+      aria-pressed={ratioId === id}
       className={cn(
-        'rounded-md px-2.5 py-1 text-xs transition',
-        ratioId === id
-          ? 'not-eink:bg-primary not-eink:text-primary-content eink-bordered'
-          : 'bg-base-200',
+        'eink-bordered min-h-10 rounded-md px-3 text-xs transition-colors sm:min-h-8',
+        focusRing,
+        ratioId === id ? 'not-eink:bg-primary not-eink:text-primary-content' : 'bg-base-200',
       )}
     >
       {_(ASPECT_RATIOS[id].name)}
@@ -249,11 +249,11 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
       key={size}
       type='button'
       onClick={() => setFontSize(size)}
+      aria-pressed={fontSize === size}
       className={cn(
-        'w-8 rounded-md py-1 text-xs transition',
-        fontSize === size
-          ? 'not-eink:bg-primary not-eink:text-primary-content eink-bordered'
-          : 'bg-base-200',
+        'eink-bordered min-h-10 w-10 rounded-md text-xs transition-colors sm:min-h-8',
+        focusRing,
+        fontSize === size ? 'not-eink:bg-primary not-eink:text-primary-content' : 'bg-base-200',
       )}
     >
       {size}
@@ -270,7 +270,10 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
 
   return (
     <Dialog isOpen title={_('Quote Card')} onClose={onClose}>
-      <div className='flex flex-col gap-4 p-4'>
+      <div className='flex flex-col gap-4 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:p-4'>
+        <p className='text-sm leading-relaxed text-base-content/70'>
+          {_('Turn this passage into a shareable reading card.')}
+        </p>
         <div
           ref={cardRef}
           style={{
@@ -292,7 +295,7 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
             style={{
               position: 'absolute',
               top: 12,
-              left: 24,
+              insetInlineStart: 24,
               fontSize: 88 * fontScale,
               lineHeight: 1,
               color: theme.accent,
@@ -318,7 +321,7 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
                 lineHeight: 1.5,
                 letterSpacing: 0.2,
                 fontWeight: 400,
-                textAlign: 'left',
+                textAlign: 'start',
               }}
             >
               {quoteText}
@@ -330,18 +333,28 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
                 borderTop: `1px solid ${theme.accent}33`,
                 display: 'flex',
                 alignItems: 'baseline',
-                justifyContent: 'space-between',
+                justifyContent: 'center',
                 gap: 12,
                 fontSize: 14 * fontScale,
+                textAlign: 'center',
               }}
             >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontWeight: 600 }}>{bookTitle}</span>
-                {chapter && <span style={{ fontWeight: 300, color: theme.accent }}>{chapter}</span>}
+              <div
+                style={{
+                  display: 'flex',
+                  minWidth: 0,
+                  maxWidth: '88%',
+                  flexDirection: 'column',
+                  gap: 4,
+                }}
+              >
+                <span style={{ overflowWrap: 'anywhere', fontWeight: 600 }}>
+                  {bookTitle || _('Untitled book')}
+                </span>
+                {author && (
+                  <span style={{ overflowWrap: 'anywhere', color: theme.accent }}>{author}</span>
+                )}
               </div>
-              <span style={{ fontWeight: 500, color: theme.accent, whiteSpace: 'nowrap' }}>
-                {author}
-              </span>
             </footer>
           </div>
           <span
@@ -349,7 +362,7 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
             style={{
               position: 'absolute',
               bottom: 10,
-              right: 18,
+              insetInlineEnd: 18,
               fontSize: 10 * fontScale,
               letterSpacing: 1.5,
               textTransform: 'uppercase',
@@ -361,19 +374,26 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
           </span>
         </div>
 
-        <div className='flex flex-col gap-3'>
-          <div className='flex items-center justify-between'>
-            <span className='text-xs font-medium text-base-content/70'>{_('Theme')}</span>
-            <div className='flex gap-2'>{themeDots}</div>
-          </div>
-          <div className='flex items-center justify-between'>
-            <span className='text-xs font-medium text-base-content/70'>{_('Aspect')}</span>
-            <div className='flex gap-1'>{ratioPills}</div>
-          </div>
-          <div className='flex items-center justify-between'>
-            <span className='text-xs font-medium text-base-content/70'>{_('Font')}</span>
-            <div className='flex gap-1'>{fontSizePills}</div>
-          </div>
+        <div className='eink-bordered flex flex-col gap-1 rounded-lg border border-base-200 bg-base-100 p-3'>
+          <span className='mb-1 text-sm font-semibold'>{_('Customize')}</span>
+          <fieldset className='flex flex-wrap items-center justify-between gap-2 py-1'>
+            <legend className='text-sm text-base-content/70'>{_('Theme')}</legend>
+            <div className='flex gap-2' role='group' aria-label={_('Theme')}>
+              {themeDots}
+            </div>
+          </fieldset>
+          <fieldset className='flex flex-wrap items-center justify-between gap-2 py-1'>
+            <legend className='text-sm text-base-content/70'>{_('Format')}</legend>
+            <div className='flex flex-wrap gap-1' role='group' aria-label={_('Format')}>
+              {ratioPills}
+            </div>
+          </fieldset>
+          <fieldset className='flex flex-wrap items-center justify-between gap-2 py-1'>
+            <legend className='text-sm text-base-content/70'>{_('Quote size')}</legend>
+            <div className='flex gap-1' role='group' aria-label={_('Quote size')}>
+              {fontSizePills}
+            </div>
+          </fieldset>
         </div>
 
         <div className='mt-1 flex flex-col gap-2'>
@@ -381,8 +401,9 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
             type='button'
             onClick={handleShare}
             disabled={exporting}
-            className='btn btn-primary w-full gap-2'
+            className='btn btn-contrast w-full gap-2'
           >
+            <FiShare aria-hidden='true' />
             {exporting ? _('Preparing…') : _('Share')}
           </button>
           <div className='grid grid-cols-2 gap-2'>
@@ -390,16 +411,18 @@ const QuoteCardModal: React.FC<QuoteCardModalProps> = ({
               type='button'
               onClick={() => void handleCopyImage()}
               disabled={exporting}
-              className='btn gap-2'
+              className='btn btn-ghost eink-bordered gap-2'
             >
+              <FiCopy aria-hidden='true' />
               {_('Copy Image')}
             </button>
             <button
               type='button'
               onClick={() => void handleDownload()}
               disabled={exporting}
-              className='btn gap-2'
+              className='btn btn-ghost eink-bordered gap-2'
             >
+              <FiDownload aria-hidden='true' />
               {_('Download PNG')}
             </button>
           </div>

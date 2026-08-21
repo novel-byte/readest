@@ -173,7 +173,6 @@ const Annotator: React.FC<{ bookKey: string; contentInsets: Insets }> = ({
   const [externalDragPoint, setExternalDragPoint] = useState<Point | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showQuoteDialog, setShowQuoteDialog] = useState(false);
-  const [quoteChapter, setQuoteChapter] = useState<string | undefined>(undefined);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [importingAnnotations, setImportingAnnotations] = useState(false);
   // "Clear Annotations" confirm dialog. Hosted here (and not in BookMenu)
@@ -1303,10 +1302,6 @@ const Annotator: React.FC<{ bookKey: string; contentInsets: Insets }> = ({
 
   const handleQuote = () => {
     if (!selection?.text) return;
-    const bookDoc = bookData.bookDoc;
-    const tocItem =
-      selection.cfi && bookDoc?.toc ? findTocItemBS(bookDoc.toc, selection.cfi) : null;
-    setQuoteChapter(tocItem?.label ?? undefined);
     setShowQuoteDialog(true);
   };
 
@@ -2232,7 +2227,6 @@ const Annotator: React.FC<{ bookKey: string; contentInsets: Insets }> = ({
           quoteText={selection.text}
           bookTitle={bookData.book.title}
           author={bookData.book.author || ''}
-          chapter={quoteChapter}
           onClose={() => setShowQuoteDialog(false)}
         />
       )}
