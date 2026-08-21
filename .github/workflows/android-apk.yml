@@ -67,23 +67,23 @@ jobs:
           pnpm tauri android init
           pnpm tauri icon ../../data/icons/readest-book.png
           git checkout src-tauri/gen/android
-          pnpm tauri android build --debug
+          pnpm tauri android build --debug -t aarch64
+          cp src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk \
+            Readest_android-arm64-debug.apk
 
       - name: upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: readest-android-debug-apk
-          path: |
-            apps/readest-app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          path: apps/readest-app/Readest_android-arm64-debug.apk
           if-no-files-found: error
 
       - name: publish GitHub prerelease
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          shopt -s globstar nullglob
-          apks=(apps/readest-app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk)
-          gh release create "android-debug-${GITHUB_RUN_NUMBER}" "${apks[@]}" \
+          gh release create "android-debug-${GITHUB_RUN_NUMBER}" \
+            apps/readest-app/Readest_android-arm64-debug.apk \
             --repo "${GITHUB_REPOSITORY}" \
             --target "${GITHUB_SHA}" \
             --title "Readest Android debug build ${GITHUB_RUN_NUMBER}" \
