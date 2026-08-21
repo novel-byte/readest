@@ -1,4 +1,4 @@
-name: Android APK (debug)
+name: Android APK (release)
 
 on:
   workflow_dispatch:
@@ -58,34 +58,35 @@ jobs:
           echo "NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co" >> apps/readest-app/.env.local
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key" >> apps/readest-app/.env.local
 
-      - name: build Android debug apk
+      - name: build Android release apk
         env:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/28.2.13676358
+          KEEP_SOURCEMAPS: '0'
         run: |
           cd apps/readest-app
           rm -rf src-tauri/gen/android
           pnpm tauri android init
           pnpm tauri icon ../../data/icons/readest-book.png
           git checkout src-tauri/gen/android
-          pnpm tauri android build --debug -t aarch64
-          cp src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk \
-            Readest_android-arm64-debug.apk
+          pnpm tauri android build -t aarch64
+          cp src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk \
+            Readest_android-arm64-release.apk
 
       - name: upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: readest-android-debug-apk
-          path: apps/readest-app/Readest_android-arm64-debug.apk
+          name: readest-android-release-apk
+          path: apps/readest-app/Readest_android-arm64-release.apk
           if-no-files-found: error
 
-      - name: publish GitHub prerelease
+      - name: publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "android-debug-${GITHUB_RUN_NUMBER}" \
-            apps/readest-app/Readest_android-arm64-debug.apk \
+          gh release create "android-arm64-${GITHUB_RUN_NUMBER}" \
+            apps/readest-app/Readest_android-arm64-release.apk \
             --repo "${GITHUB_REPOSITORY}" \
             --target "${GITHUB_SHA}" \
-            --title "Readest Android debug build ${GITHUB_RUN_NUMBER}" \
-            --notes "Automated debug APK build from commit ${GITHUB_SHA}." \
+            --title "Readest Android release build ${GITHUB_RUN_NUMBER}" \
+            --notes "Automated arm64 release APK build from commit ${GITHUB_SHA}." \
             --prerelease
