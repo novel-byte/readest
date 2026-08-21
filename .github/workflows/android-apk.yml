@@ -69,8 +69,29 @@ jobs:
           pnpm tauri icon ../../data/icons/readest-book.png
           git checkout src-tauri/gen/android
           pnpm tauri android build -t aarch64
-          cp src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk \
-            Readest_android-arm64-release.apk
+          unsigned_apk=src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+          aligned_apk="$RUNNER_TEMP/readest-arm64-aligned.apk"
+          keystore="$RUNNER_TEMP/readest-debug.keystore"
+          mapfile -t build_tools < <(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V)
+          build_tools_dir="${build_tools[${#build_tools[@]}-1]}"
+          keytool -genkeypair -v \
+            -keystore "$keystore" \
+            -storepass android \
+            -keypass android \
+            -alias readest \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Readest CI Debug,O=Readest,C=US"
+          "$build_tools_dir/zipalign" -p -f 4 "$unsigned_apk" "$aligned_apk"
+          "$build_tools_dir/apksigner" sign \
+            --ks "$keystore" \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --ks-key-alias readest \
+            --out Readest_android-arm64-release.apk \
+            "$aligned_apk"
+          "$build_tools_dir/apksigner" verify --verbose Readest_android-arm64-release.apk
 
       - name: upload APK artifacts
         uses: actions/upload-artifact@v4
